@@ -1,4 +1,5 @@
 import telebot
+from telebot import types
 import json
 from config import TOKEN
 
@@ -7,10 +8,10 @@ bot = telebot.TeleBot(TOKEN)
 ADMIN_ID = 123456789
 JADVAL = {
     "dushanba": "Python 15:00",
-    "seshanba": "Backend 14:00",
+    "seshanba": "Ingliz tili 14:00",
     "chorshanba": "Python 15:00",
-    "payshanba": "Frontend 14:00",
-    "juma": "Cyber 15:00",
+    "payshanba": "Matematika 14:00",
+    "juma": "Loyiha 15:00",
 }
 
 SAVOLLAR = [
@@ -23,9 +24,9 @@ test_holat = {}
 
 
 def asosiy_menyu():
-    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(" Dars jadvali", " Ro'yxatdan o'tish")
-    markup.row(" Test", " Yordam")
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.row("📅 Dars jadvali", "📝 Ro'yxatdan o'tish")
+    markup.row("🧠 Test", "ℹ️ Yordam")
     return markup
 
 
@@ -34,7 +35,7 @@ def royxatni_oqi():
         with open("royxat.json") as f:
             return json.load(f)
     except:
-        return {}
+        return {}   # fayl hali yo'q
 
 
 def royxatni_yoz(malumot):
@@ -46,12 +47,12 @@ def royxatni_yoz(malumot):
 def start(message):
     ism = message.from_user.first_name
     bot.send_message(message.chat.id,
-                     f"Salom, <b>{ism}</b>! \nMen <i>Ustudy</i> maktab botiman.\nBuyruqlar: /help",
+                     f"Salom, <b>{ism}</b>! 👋\nMen <i>Ustudy</i> maktab botiman.\nBuyruqlar: /help",
                      parse_mode="HTML", reply_markup=asosiy_menyu())
 
 
 @bot.message_handler(commands=['help'])
-@bot.message_handler(func=lambda m: m.text == "ℹ Yordam")
+@bot.message_handler(func=lambda m: m.text == "ℹ️ Yordam")
 def yordam(message):
     bot.reply_to(message, "/start — boshlash\n/jadval — dars jadvali\n/jadval juma — bitta kun\n"
                           "/royxat — ro'yxatdan o'tish\n/test — mini test\n/id — chat_id")
@@ -63,7 +64,7 @@ def mening_id(message):
 
 
 @bot.message_handler(commands=['jadval'])
-@bot.message_handler(func=lambda m: m.text == " Dars jadvali")
+@bot.message_handler(func=lambda m: m.text == "📅 Dars jadvali")
 def jadval(message):
     qismlar = message.text.split()
     if len(qismlar) > 1:
@@ -72,14 +73,15 @@ def jadval(message):
             bot.reply_to(message, f"{kun.capitalize()}: {JADVAL[kun]}")
         else:
             bot.reply_to(message, "Bunday kun yo'q. Masalan: /jadval juma")
-    else:                                     # hamma kunlar
-        matn = " Dars jadvali:\n"
+    else:
+        matn = "📅 Dars jadvali:\n"
         for kun in JADVAL:
-            matn += f" {kun.capitalize()}: {JADVAL[kun]}\n"
+            matn += f"• {kun.capitalize()}: {JADVAL[kun]}\n"
         bot.reply_to(message, matn)
 
+
 @bot.message_handler(commands=['royxat'])
-@bot.message_handler(func=lambda m: m.text == "Ro'yxatdan o'tish")
+@bot.message_handler(func=lambda m: m.text == "📝 Ro'yxatdan o'tish")
 def royxat(message):
     javob = bot.send_message(message.chat.id, "Ismingizni yozing:")
     bot.register_next_step_handler(javob, ism_qabul)
@@ -96,39 +98,22 @@ def yosh_qabul(message, ism):
         javob = bot.send_message(message.chat.id, "Yoshni raqam bilan yozing:")
         bot.register_next_step_handler(javob, yosh_qabul, ism)
         return
-    telefon_sora(message.chat.id, ism, message.text)
-
-
-def telefon_sora(chat_id, ism, yosh):
-    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(telebot.types.KeyboardButton("Raqamni yuborish", request_contact=True))
-    javob = bot.send_message(chat_id, "Telefon raqamingizni tugma orqali yuboring ",
-                             reply_markup=markup)
-    bot.register_next_step_handler(javob, telefon_qabul, ism, yosh)
-
-
-def telefon_qabul(message, ism, yosh):
-    if message.contact is None:
-        telefon_sora(message.chat.id, ism, yosh)
-        return
     malumot = royxatni_oqi()
-    malumot[str(message.chat.id)] = {"ism": ism, "yosh": yosh,
-                                     "telefon": message.contact.phone_number}
+    malumot[str(message.chat.id)] = {"ism": ism, "yosh": message.text}
     royxatni_yoz(malumot)
-    bot.send_message(message.chat.id, "✅ Ro'yxatdan o'tdingiz!", reply_markup=asosiy_menyu())
+    bot.send_message(message.chat.id, "Ro'yxatdan o'tdingiz!", reply_markup=asosiy_menyu())
 
 
 @bot.message_handler(commands=['royxatlar'])
 def royxatlar(message):
     if message.chat.id != ADMIN_ID:
-        bot.reply_to(message, "Faqat admin uchun.")
+        bot.reply_to(message, " Faqat admin uchun.")
         return
     bot.reply_to(message, f"Ro'yxatdan o'tganlar: {len(royxatni_oqi())} ta")
 
 
-
 @bot.message_handler(commands=['test'])
-@bot.message_handler(func=lambda m: m.text == "Test")
+@bot.message_handler(func=lambda m: m.text == "🧠 Test")
 def test(message):
     test_holat[message.chat.id] = {"nomer": 0, "ball": 0}
     savol_yubor(message.chat.id)
@@ -142,10 +127,10 @@ def savol_yubor(chat_id):
         del test_holat[chat_id]
         return
     savol, variantlar, togri = SAVOLLAR[n]
-    markup = telebot.types.InlineKeyboardMarkup()
+    markup = types.InlineKeyboardMarkup()
     for i in range(len(variantlar)):
-        markup.add(telebot.types.InlineKeyboardButton(variantlar[i], callback_data=str(i)))
-    bot.send_message(chat_id, f"{n + 1}/{len(SAVOLLAR)}: {savol}", reply_markup=markup)
+        markup.add(types.InlineKeyboardButton(variantlar[i], callback_data=str(i)))
+    bot.send_message(chat_id, f"❓ {n + 1}/{len(SAVOLLAR)}: {savol}", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda c: True)
@@ -160,7 +145,7 @@ def javob(call):
         bot.answer_callback_query(call.id, " To'g'ri!")
     else:
         bot.answer_callback_query(call.id, " Noto'g'ri")
-    bot.edit_message_reply_markup(chat_id, call.message.message_id)   # tugmalarni o'chirish
+    bot.edit_message_reply_markup(chat_id, call.message.message_id)
     test_holat[chat_id]["nomer"] += 1
     savol_yubor(chat_id)
 
@@ -169,18 +154,15 @@ def javob(call):
 def rasm(message):
     bot.reply_to(message, "📷 Rasm qabul qilindi! Chiroyli ekan.")
 
-
 @bot.message_handler(content_types=['sticker'])
 def stiker(message):
     bot.send_sticker(message.chat.id, message.sticker.file_id)
-
 
 @bot.message_handler(content_types=['location'])
 def joy(message):
     lat, lon = message.location.latitude, message.location.longitude
     bot.reply_to(message, f"📍 Siz shu yerdasiz: {lat:.4f}, {lon:.4f}")
     bot.send_location(message.chat.id, 41.3111, 69.2797)
-
 
 @bot.message_handler(func=lambda m: True)
 def boshqa(message):
